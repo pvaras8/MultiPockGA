@@ -4,9 +4,9 @@ ga:
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run"
   num_generations: 10
-  top_k: 100
-  crossover_budget: 20
-  mutation_budget: 20
+  top_k: 4
+  crossover_budget: 2
+  mutation_budget: 2
   crossover_attempts: 3
   mutation_children_limit: 0
   maximize_fitness: true

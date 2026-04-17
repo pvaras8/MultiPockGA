@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import tempfile
 import subprocess
 from typing import List
 
@@ -30,7 +31,11 @@ class DockingProvider(RewardProvider):
         self.output_prefix = self.provider_cfg.get("output_prefix", "docking_results")
         self.output_column = self.provider_cfg.get("output_column", "Docking")
         self.suffix = self.provider_cfg.get("suffix", None)
-        self.output_dir = self.provider_cfg.get("output_dir")
+        output_dir_cfg = self.provider_cfg.get("output_dir")
+        if output_dir_cfg:
+            self.output_dir = self._resolve_path(output_dir_cfg, config_dir, repo_root)
+        else:
+            self.output_dir = None
 
     @staticmethod
     def _resolve_path(path_value: str, config_dir: str, repo_root: str) -> str:
@@ -66,11 +71,29 @@ class DockingProvider(RewardProvider):
     def compute(self, smiles_list: List[str], epoch: int) -> pd.DataFrame:
         self._write_smiles_file(smiles_list)
 
-        subprocess.run(
-            [sys.executable, self.script, self.smiles_output_file, self.vars_file, str(epoch)],
-            check=True,
-            cwd=os.path.abspath(self.cfg.get("_config_dir", os.getcwd())),
-        )
+        vars_for_run = self.vars_file
+        temp_vars_file = None
+        if self.output_dir:
+            os.makedirs(self.output_dir, exist_ok=True)
+            with open(self.vars_file, "r") as f:
+                vars_cfg = json.load(f)
+            vars_cfg["final_folder"] = self.output_dir
+
+            fd, temp_vars_file = tempfile.mkstemp(prefix="dock_vars_", suffix=".json")
+            os.close(fd)
+            with open(temp_vars_file, "w") as f:
+                json.dump(vars_cfg, f)
+            vars_for_run = temp_vars_file
+
+        try:
+            subprocess.run(
+                [sys.executable, self.script, self.smiles_output_file, vars_for_run, str(epoch)],
+                check=True,
+                cwd=os.path.abspath(self.cfg.get("_config_dir", os.getcwd())),
+            )
+        finally:
+            if temp_vars_file and os.path.exists(temp_vars_file):
+                os.remove(temp_vars_file)
 
         output_file = self._get_output_file(epoch)
 
