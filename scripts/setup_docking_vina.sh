@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-
 set -e
 
 echo "⬇️ Downloading docking_vina..."
 
 FILE_ID="1B7270Q4yG00TuJztwveHcLo9Mr6WaLU5"
 
-pip install -q gdown
-gdown $FILE_ID -O docking_vina.zip
+python -m pip install -q gdown
+python -m gdown $FILE_ID -O docking_vina.zip
 
 echo "📦 Unzipping..."
 unzip -q docking_vina.zip
