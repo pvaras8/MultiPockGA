@@ -19,15 +19,28 @@ class DockingProvider(RewardProvider):
     def __init__(self, cfg, provider_cfg=None):
         super().__init__(cfg, provider_cfg)
 
-        self.script = os.path.abspath(self.provider_cfg["script"])
-        self.vars_file = os.path.abspath(self.provider_cfg["vars_file"])
-        self.smiles_output_file = os.path.abspath(self.provider_cfg["smiles_output_file"])
+        config_dir = os.path.abspath(self.cfg.get("_config_dir", os.getcwd()))
+
+        self.script = self._resolve_path(self.provider_cfg["script"], config_dir)
+        self.vars_file = self._resolve_path(self.provider_cfg["vars_file"], config_dir)
+        self.smiles_output_file = self._resolve_path(
+            self.provider_cfg["smiles_output_file"], config_dir
+        )
         self.output_prefix = self.provider_cfg.get("output_prefix", "docking_results")
         self.output_column = self.provider_cfg.get("output_column", "Docking")
         self.suffix = self.provider_cfg.get("suffix", None)
+        self.output_dir = self.provider_cfg.get("output_dir")
+
+    @staticmethod
+    def _resolve_path(path_value: str, base_dir: str) -> str:
+        if os.path.isabs(path_value):
+            return path_value
+        return os.path.abspath(os.path.join(base_dir, path_value))
 
     def _write_smiles_file(self, smiles_list: List[str]) -> None:
-        os.makedirs(os.path.dirname(self.smiles_output_file), exist_ok=True)
+        out_dir = os.path.dirname(self.smiles_output_file)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
         with open(self.smiles_output_file, "w") as f:
             for smi in smiles_list:
                 f.write(smi + "\n")
@@ -36,9 +49,10 @@ class DockingProvider(RewardProvider):
         with open(self.vars_file, "r") as f:
             vars_cfg = json.load(f)
 
-        base_dir = os.path.abspath(
-            vars_cfg.get("final_folder", os.path.dirname(self.smiles_output_file))
+        base_dir = self.output_dir or vars_cfg.get(
+            "final_folder", os.path.dirname(self.smiles_output_file)
         )
+        base_dir = os.path.abspath(base_dir)
 
         if self.suffix is None:
             return os.path.join(base_dir, f"{self.output_prefix}_{epoch}_temp.csv")
@@ -50,6 +64,7 @@ class DockingProvider(RewardProvider):
         subprocess.run(
             [sys.executable, self.script, self.smiles_output_file, self.vars_file, str(epoch)],
             check=True,
+            cwd=os.path.abspath(self.cfg.get("_config_dir", os.getcwd())),
         )
 
         output_file = self._get_output_file(epoch)
@@ -59,11 +74,15 @@ class DockingProvider(RewardProvider):
 
         df = pd.read_csv(output_file)
 
-        if self.output_column not in df.columns:
-            raise ValueError(
-                f"El CSV no contiene la columna '{self.output_column}'. "
-                f"Columnas disponibles: {list(df.columns)}"
-            )
+        source_column = self.output_column
+        if source_column not in df.columns:
+            if "Docking" in df.columns:
+                source_column = "Docking"
+            else:
+                raise ValueError(
+                    f"El CSV no contiene la columna '{self.output_column}'. "
+                    f"Columnas disponibles: {list(df.columns)}"
+                )
 
         if len(df) != len(smiles_list):
             raise RuntimeError(
@@ -82,6 +101,6 @@ class DockingProvider(RewardProvider):
             {
                 "input_idx": np.arange(len(smiles_list)),
                 "SMILES": smiles_list,
-                self.output_column: df[self.output_column].astype(float).to_numpy(),
+                self.output_column: df[source_column].astype(float).to_numpy(),
             }
         )
