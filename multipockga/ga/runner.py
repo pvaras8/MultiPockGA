@@ -26,6 +26,17 @@ class GARunner:
         self.mutation_budget = int(self.ga_cfg.get("mutation_budget", 20))
         self.crossover_attempts = int(self.ga_cfg.get("crossover_attempts", 3))
         self.mutation_children_limit = int(self.ga_cfg.get("mutation_children_limit", 0))
+        self.operator_backend = str(self.ga_cfg.get("operator_backend", "autogrow")).lower()
+        self.crossover_backend = str(
+            self.ga_cfg.get("crossover_backend", self.operator_backend)
+        ).lower()
+        self.mutation_backend = str(
+            self.ga_cfg.get("mutation_backend", self.operator_backend)
+        ).lower()
+        self.crossover_products_per_pair = int(
+            self.ga_cfg.get("crossover_products_per_pair", 4)
+        )
+        self.selfies_mutation_tries = int(self.ga_cfg.get("selfies_mutation_tries", 30))
         self.maximize_fitness = bool(self.ga_cfg.get("maximize_fitness", True))
 
         self.output_dir = self._resolve_path(self.ga_cfg.get("output_dir", "experiments/ga_run"))
@@ -153,6 +164,12 @@ class GARunner:
         vars_dict["source_compound_file"] = temp_smi_path
 
     def _bootstrap_autogrow_objects(self) -> None:
+        self._smiles_click_chem_cls = None
+        self.rxn_library_variables = []
+
+        if self.mutation_backend != "autogrow":
+            return
+
         import autogrow.operators.mutation.smiles_click_chem.smiles_click_chem as SmileClickClass
 
         self._smiles_click_chem_cls = SmileClickClass.SmilesClickChem
@@ -215,6 +232,13 @@ class GARunner:
         return bool(Filter.run_filter_on_just_smiles(smiles, self.vars["filter_object_dict"]))
 
     def _generate_crossover_candidates(self, smiles_list: List[str]) -> Set[str]:
+        if self.crossover_backend == "autogrow":
+            return self._generate_crossover_candidates_autogrow(smiles_list)
+        if self.crossover_backend in {"brics", "brics_selfies", "simple"}:
+            return self._generate_crossover_candidates_brics(smiles_list)
+        raise ValueError(f"crossover backend desconocido: {self.crossover_backend}")
+
+    def _generate_crossover_candidates_autogrow(self, smiles_list: List[str]) -> Set[str]:
         import autogrow.operators.crossover.execute_crossover as execute_crossover
         import autogrow.operators.crossover.smiles_merge.smiles_merge as smiles_merge
 
@@ -267,6 +291,39 @@ class GARunner:
         return generated
 
     def _generate_mutation_candidates(self, smiles_list: List[str]) -> Set[str]:
+        if self.mutation_backend == "autogrow":
+            return self._generate_mutation_candidates_autogrow(smiles_list)
+        if self.mutation_backend in {"selfies", "brics_selfies", "simple"}:
+            return self._generate_mutation_candidates_selfies(smiles_list)
+        raise ValueError(f"mutation backend desconocido: {self.mutation_backend}")
+
+    def _generate_crossover_candidates_brics(self, smiles_list: List[str]) -> Set[str]:
+        from multipockga.ga.crossover_rdkit import generate_crossovers
+
+        if len(smiles_list) < 2 or self.crossover_budget <= 0:
+            return set()
+
+        generated = generate_crossovers(
+            smiles_list,
+            budget=self.crossover_budget,
+            max_products_per_pair=self.crossover_products_per_pair,
+            seed=self.ga_cfg.get("random_seed"),
+        )
+
+        filtered: Set[str] = set()
+        for candidate in generated:
+            candidate = self._canonicalize(candidate)
+            if not candidate:
+                continue
+            if candidate in self.seen_smiles:
+                continue
+            if not self._passes_filters(candidate):
+                continue
+            filtered.add(candidate)
+
+        return filtered
+
+    def _generate_mutation_candidates_autogrow(self, smiles_list: List[str]) -> Set[str]:
         if len(smiles_list) == 0 or self.mutation_budget <= 0:
             return set()
 
@@ -298,6 +355,31 @@ class GARunner:
 
         return generated
 
+    def _generate_mutation_candidates_selfies(self, smiles_list: List[str]) -> Set[str]:
+        from multipockga.ga.mutation_rdkit import generate_mutations
+
+        if len(smiles_list) == 0 or self.mutation_budget <= 0:
+            return set()
+
+        generated = generate_mutations(
+            smiles_list,
+            budget=self.mutation_budget,
+            seed=self.ga_cfg.get("random_seed"),
+        )
+
+        filtered: Set[str] = set()
+        for cand in generated:
+            cand = self._canonicalize(cand)
+            if not cand:
+                continue
+            if cand in self.seen_smiles:
+                continue
+            if not self._passes_filters(cand):
+                continue
+            filtered.add(cand)
+
+        return filtered
+
     def _evaluate_population(self, smiles_list: List[str], epoch: int) -> pd.DataFrame:
         rewards = self.reward_runner(smiles_list, epoch)
         df = pd.DataFrame({"SMILES": smiles_list, "Fitness": rewards})
@@ -316,6 +398,17 @@ class GARunner:
         df.to_csv(out_file, index=False)
 
     def run(self) -> pd.DataFrame:
+        print("---------- GA configuration ----------")
+        print(f"Output dir: {self.output_dir}")
+        print(f"Operator backend: {self.operator_backend}")
+        print(f"Crossover backend: {self.crossover_backend}")
+        print(f"Mutation backend: {self.mutation_backend}")
+        print(f"Generations: {self.num_generations}")
+        print(f"Top-k: {self.top_k}")
+        print(f"Crossover budget: {self.crossover_budget}")
+        print(f"Mutation budget: {self.mutation_budget}")
+        print(f"Reward output dir: {self.reward_runner.output_dir}")
+
         initial_smiles = self._load_initial_smiles()
         self.seen_smiles.update(initial_smiles)
 

@@ -1,0 +1,37 @@
+ga:
+  source_compound_file: "datasets/epoch_64_results.csv"
+  source_smiles_column: "SMILES"
+  output_dir: "experiments/ga_run_meeko"
+  operator_backend: "brics_selfies"
+  num_generations: 10
+  top_k: 4
+  crossover_budget: 2
+  mutation_budget: 2
+  crossover_products_per_pair: 4
+  mutation_children_limit: 1
+  selfies_mutation_tries: 30
+  maximize_fitness: true
+  random_seed: 7
+
+autogrow:
+  vars_file: "config/vars_mgltools_6eif.json"
+  number_of_processors: -1
+  multithread_mode: "multithreading"
+
+reward:
+  input_type: "smiles"
+  results_output_dir: "experiments/ga_run_meeko/rewards"
+  results_output_prefix: "reward_results"
+  fail_on_error: true
+  combiner: "docking_only"
+  docking_column: "Docking"
+
+  providers:
+    - name: "dock_meeko_6eif"
+      type: "docking"
+      script: "scripts/reward_meeko_vina.py"
+      vars_file: "config/vars_meeko.json"
+      smiles_output_file: "experiments/ga_run_meeko/tmp/smiles_6eif.smi"
+      output_dir: "experiments/ga_run_meeko/tmp/6eif"
+      output_prefix: "docking_results"
+      output_column: "Docking"

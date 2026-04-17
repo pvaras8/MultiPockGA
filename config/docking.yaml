@@ -3,12 +3,18 @@ ga:
   # Si source_compound_file termina en .csv, se usa esta columna.
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run"
+  operator_backend: "autogrow"
+  # Opciones:
+  # - autogrow: smiles_merge + SmileClickChem
+  # - brics_selfies: crossover BRICS + mutation SELFIES
   num_generations: 10
   top_k: 4
   crossover_budget: 2
   mutation_budget: 2
   crossover_attempts: 3
+  crossover_products_per_pair: 4
   mutation_children_limit: 0
+  selfies_mutation_tries: 30
   maximize_fitness: true
   random_seed: 7
 
