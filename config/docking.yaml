@@ -1,5 +1,5 @@
 ga:
-  source_compound_file: "datasets/source_compounds.smi"
+  source_compound_file: "datasets/epoch_64_results.csv"
   # Si source_compound_file termina en .csv, se usa esta columna.
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run"
