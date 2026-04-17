@@ -29,6 +29,7 @@ class RewardRunner:
 
         self.output_prefix = self.reward_cfg.get("results_output_prefix", "reward_results")
         self.output_dir = self.reward_cfg.get("results_output_dir", ".")
+        self.fail_on_error = bool(self.reward_cfg.get("fail_on_error", True))
 
         providers_cfg = self.reward_cfg.get("providers", [])
         if not providers_cfg:
@@ -217,4 +218,6 @@ class RewardRunner:
 
         except Exception as e:
             print(f"Error durante reward_fn: {e}")
+            if self.fail_on_error:
+                raise
             return [0.0] * len(molecules)

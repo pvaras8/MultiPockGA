@@ -17,5 +17,6 @@ dependencies:
   - pip:
       - omegaconf
       - selfies
+      - func-timeout
       - gdown
       - -e .

@@ -21,6 +21,7 @@ reward:
   input_type: "smiles"
   results_output_dir: "experiments/ga_run/rewards"
   results_output_prefix: "reward_results"
+  fail_on_error: true
 
   # Opciones de combiner soportadas:
   # - docking_only
