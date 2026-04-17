@@ -13,6 +13,9 @@ class GARunner:
     def __init__(self, cfg: Dict):
         self.cfg = cfg
         self.config_dir = os.path.abspath(self.cfg.get("_config_dir", os.getcwd()))
+        self.repo_root = os.path.abspath(
+            self.cfg.get("_repo_root", os.path.join(self.config_dir, os.pardir))
+        )
 
         self.ga_cfg = cfg.get("ga", {})
         self.autogrow_cfg = cfg.get("autogrow", {})
@@ -41,7 +44,11 @@ class GARunner:
     def _resolve_path(self, path_value: str) -> str:
         if os.path.isabs(path_value):
             return path_value
-        return os.path.abspath(os.path.join(self.config_dir, path_value))
+
+        if path_value.startswith("./") or path_value.startswith("../"):
+            return os.path.abspath(os.path.join(self.config_dir, path_value))
+
+        return os.path.abspath(os.path.join(self.repo_root, path_value))
 
     def _build_autogrow_vars(self) -> Dict:
         if "vars_file" not in self.autogrow_cfg:

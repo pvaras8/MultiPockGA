@@ -14,6 +14,7 @@ from multipockga.ga import GARunner
 def load_config(config_path: str) -> dict:
 	abs_cfg_path = os.path.abspath(config_path)
 	config_dir = os.path.dirname(abs_cfg_path)
+	repo_root = REPO_ROOT
 
 	with open(abs_cfg_path, "r") as f:
 		cfg = yaml.safe_load(f)
@@ -23,6 +24,7 @@ def load_config(config_path: str) -> dict:
 
 	cfg["_config_path"] = abs_cfg_path
 	cfg["_config_dir"] = config_dir
+	cfg["_repo_root"] = repo_root
 	return cfg
 
 

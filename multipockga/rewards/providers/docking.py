@@ -20,11 +20,12 @@ class DockingProvider(RewardProvider):
         super().__init__(cfg, provider_cfg)
 
         config_dir = os.path.abspath(self.cfg.get("_config_dir", os.getcwd()))
+        repo_root = os.path.abspath(self.cfg.get("_repo_root", os.path.join(config_dir, os.pardir)))
 
-        self.script = self._resolve_path(self.provider_cfg["script"], config_dir)
-        self.vars_file = self._resolve_path(self.provider_cfg["vars_file"], config_dir)
+        self.script = self._resolve_path(self.provider_cfg["script"], config_dir, repo_root)
+        self.vars_file = self._resolve_path(self.provider_cfg["vars_file"], config_dir, repo_root)
         self.smiles_output_file = self._resolve_path(
-            self.provider_cfg["smiles_output_file"], config_dir
+            self.provider_cfg["smiles_output_file"], config_dir, repo_root
         )
         self.output_prefix = self.provider_cfg.get("output_prefix", "docking_results")
         self.output_column = self.provider_cfg.get("output_column", "Docking")
@@ -32,10 +33,14 @@ class DockingProvider(RewardProvider):
         self.output_dir = self.provider_cfg.get("output_dir")
 
     @staticmethod
-    def _resolve_path(path_value: str, base_dir: str) -> str:
+    def _resolve_path(path_value: str, config_dir: str, repo_root: str) -> str:
         if os.path.isabs(path_value):
             return path_value
-        return os.path.abspath(os.path.join(base_dir, path_value))
+
+        if path_value.startswith("./") or path_value.startswith("../"):
+            return os.path.abspath(os.path.join(config_dir, path_value))
+
+        return os.path.abspath(os.path.join(repo_root, path_value))
 
     def _write_smiles_file(self, smiles_list: List[str]) -> None:
         out_dir = os.path.dirname(self.smiles_output_file)
