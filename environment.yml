@@ -1,9 +1,21 @@
 name: multipockga
+
 channels:
   - conda-forge
+
 dependencies:
-  - python=3.11
+  - python=3.10
+  - numpy
+  - pandas
+  - pyyaml
+  - scipy
+  - tqdm
+  - requests
+  - rdkit
+  - biopython
   - pip
-  - pytest
   - pip:
+      - omegaconf
+      - selfies
+      - gdown
       - -e .
