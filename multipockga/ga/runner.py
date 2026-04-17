@@ -66,6 +66,8 @@ class GARunner:
                 continue
             vars_dict[key] = value
 
+        self._ensure_autogrow_source_compound_file(vars_dict)
+
         from autogrow.user_vars import (
             determine_bash_timeout_vs_gtimeout,
             load_in_commandline_parameters,
@@ -83,6 +85,72 @@ class GARunner:
             raise RuntimeError("No se pudo determinar timeout/gtimeout para Autogrow")
 
         return args_dict
+
+    def _ensure_autogrow_source_compound_file(self, vars_dict: Dict) -> None:
+        source_smiles_column = self.ga_cfg.get("source_smiles_column", "SMILES")
+
+        # Priorizamos la fuente de GA (csv/smi) por sobre la heredada de vars.
+        candidate_source = self.ga_cfg.get("source_compound_file") or vars_dict.get(
+            "source_compound_file"
+        )
+        if not candidate_source:
+            raise ValueError("No se encontro source_compound_file en ga ni en vars de autogrow")
+
+        source_path = self._resolve_path(candidate_source)
+        if not os.path.exists(source_path):
+            raise FileNotFoundError(f"No existe source_compound_file: {source_path}")
+
+        if source_path.lower().endswith(".smi"):
+            vars_dict["source_compound_file"] = source_path
+            return
+
+        if source_path.lower().endswith(".csv"):
+            df = pd.read_csv(source_path)
+            if source_smiles_column not in df.columns:
+                raise ValueError(
+                    f"El CSV inicial no contiene la columna '{source_smiles_column}'. "
+                    f"Columnas disponibles: {list(df.columns)}"
+                )
+
+            temp_smi_path = os.path.join(self.output_dir, "autogrow_source_from_csv.smi")
+            written = 0
+            with open(temp_smi_path, "w") as fout:
+                for idx, smi in enumerate(df[source_smiles_column].astype(str).tolist(), start=1):
+                    smi_canon = self._canonicalize(smi)
+                    if not smi_canon:
+                        continue
+                    fout.write(f"{smi_canon}\tseed_{idx}\n")
+                    written += 1
+
+            if written == 0:
+                raise ValueError(
+                    "No se pudieron convertir SMILES validos desde el CSV para crear el .smi de AutoGrow"
+                )
+
+            vars_dict["source_compound_file"] = temp_smi_path
+            return
+
+        # Si viene en otro formato de texto, intentamos interpretarlo como lista de smiles.
+        temp_smi_path = os.path.join(self.output_dir, "autogrow_source_from_text.smi")
+        written = 0
+        with open(source_path, "r") as fin, open(temp_smi_path, "w") as fout:
+            for idx, line in enumerate(fin, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                smi = line.split()[0]
+                smi_canon = self._canonicalize(smi)
+                if not smi_canon:
+                    continue
+                fout.write(f"{smi_canon}\tseed_{idx}\n")
+                written += 1
+
+        if written == 0:
+            raise ValueError(
+                f"No se pudieron extraer SMILES validos desde source_compound_file: {source_path}"
+            )
+
+        vars_dict["source_compound_file"] = temp_smi_path
 
     def _bootstrap_autogrow_objects(self) -> None:
         import autogrow.operators.mutation.smiles_click_chem.smiles_click_chem as SmileClickClass
