@@ -14,6 +14,7 @@ unzip -q docking_vina.zip
 rm docking_vina.zip
 
 echo "✅ docking_vina ready"
+chmod -R u+rwX docking_vina
 
 echo ""
 echo "⚠️ IMPORTANT: Install MGLTools manually:"
