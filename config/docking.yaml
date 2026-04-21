@@ -5,10 +5,10 @@ ga:
   output_dir: "experiments/ga_run"
   # Crossover/Mutation siempre se ejecutan con AutoGrow.
   operator_backend: "autogrow"
-  num_generations: 10
-  top_k: 4
-  crossover_budget: 2
-  mutation_budget: 2
+  num_generations: 30
+  top_k: 100
+  crossover_budget: 20
+  mutation_budget: 20
   crossover_attempts: 3
   mutation_children_limit: 0
   maximize_fitness: true

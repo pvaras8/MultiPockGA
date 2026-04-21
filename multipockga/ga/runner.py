@@ -372,9 +372,9 @@ class GARunner:
     def run(self) -> pd.DataFrame:
         print("---------- GA configuration ----------")
         print(f"Output dir: {self.output_dir}")
-        print("Operator backend: autogrow (fixed)")
-        print("Crossover backend: autogrow (fixed)")
-        print("Mutation backend: autogrow (fixed)")
+        print("Operator backend: autogrow")
+        print("Crossover backend: autogrow")
+        print("Mutation backend: autogrow")
         print(f"Generations: {self.num_generations}")
         print(f"Top-k: {self.top_k}")
         print(f"Crossover budget: {self.crossover_budget}")
