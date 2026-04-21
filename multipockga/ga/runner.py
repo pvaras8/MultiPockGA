@@ -70,13 +70,24 @@ class GARunner:
         self._ensure_autogrow_source_compound_file(vars_dict)
 
         from autogrow.user_vars import (
+            check_for_required_inputs,
+            check_value_types,
+            define_defaults,
             determine_bash_timeout_vs_gtimeout,
-            load_in_commandline_parameters,
+            filter_choice_handling,
+            handle_custom_inputs_if_argparsed,
             multiprocess_handling,
         )
 
         inputs = {k: v for k, v in vars_dict.items() if v is not None}
-        args_dict, _ = load_in_commandline_parameters(inputs)
+        check_for_required_inputs(inputs)
+        inputs = handle_custom_inputs_if_argparsed(inputs)
+        args_dict, inputs = check_value_types(define_defaults(), inputs)
+        for key, value in inputs.items():
+            args_dict[key] = value
+
+        # Build filter object dictionary without invoking full AutoGrow run setup.
+        args_dict = filter_choice_handling(args_dict)
         args_dict = multiprocess_handling(args_dict)
 
         timeout_option = determine_bash_timeout_vs_gtimeout()
