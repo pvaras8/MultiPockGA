@@ -10,35 +10,29 @@ def sigmoid_pen_docking(x, min_x=-12.0, max_x=-6.0, min_sig_in=-6, max_sig_in=6)
     return sig(input_map(x))
 
 
-def sigmoid_pen_weight(x, min_x=300.0, max_x=500, min_sig_in=-6, max_sig_in=6):
-    sig = lambda y: 1 / (1 + exp(-y))
-    input_map = lambda y: (y - min_x) / (max_x - min_x) * (max_sig_in - min_sig_in) + min_sig_in
-    return sig(input_map(x))
-
-
 def combine_docking_only(d):
     return 1 - sigmoid_pen_docking(d)
 
 
-def combine_docking_multi(docking_values, aggregation="mean"):
-    values = np.asarray(docking_values, dtype=float)
-    if values.size == 0:
-        raise ValueError("No hay valores de docking para combinar")
+def combine_two_docking(d1, d2, alpha=0.5, beta=0.5):
+    """
+    Combina dos scores de docking en una sola recompensa.
+    alpha y beta controlan el peso de cada docking.
+    """
+    total = float(alpha) + float(beta)
+    if total <= 0:
+        raise ValueError("alpha + beta debe ser mayor que 0")
 
-    if aggregation == "mean":
-        agg_value = float(np.mean(values))
-    elif aggregation == "min":
-        agg_value = float(np.min(values))
-    elif aggregation == "max":
-        agg_value = float(np.max(values))
-    else:
-        raise ValueError(f"Agregacion de docking no soportada: {aggregation}")
+    alpha_n = float(alpha) / total
+    beta_n = float(beta) / total
 
-    return 1 - sigmoid_pen_docking(agg_value)
+    r_docking_1 = 1 - sigmoid_pen_docking(float(d1))
+    r_docking_2 = 1 - sigmoid_pen_docking(float(d2))
+    return float(alpha_n * r_docking_1 + beta_n * r_docking_2)
 
 
 def combine_docking_logP(docking, logp):
-    def docking_component(d, d_min=-10.0, d_max=-4.0, s_min=-6.0, s_max=6.0, power=1.3):
+    def docking_component(d, d_min=-12.0, d_max=-6.0, s_min=-6.0, s_max=6.0, power=1.3):
         z = (d - d_min) / (d_max - d_min) * (s_max - s_min) + s_min
         base = 1.0 - (1.0 / (1.0 + np.exp(-z)))
         return np.clip(base, 0.0, 1.0) ** power
@@ -58,18 +52,36 @@ def combine_docking_logP(docking, logp):
     return float(reward)
 
 
-def combine_weighted_sum(values, weights, bias=0.0):
-    arr = np.asarray(values, dtype=float)
-    w = np.asarray(weights, dtype=float)
-    if arr.shape[0] != w.shape[0]:
-        raise ValueError("values y weights deben tener la misma longitud")
-    return float(np.dot(arr, w) + float(bias))
+def combine_two_docking_logP(
+    d1,
+    d2,
+    logp,
+    alpha=0.5,
+    beta=0.5,
+    mu=2.5,
+    sigma=1.0,
+    eps_floor=0.02,
+):
+    total = float(alpha) + float(beta)
+    if total <= 0:
+        raise ValueError("alpha + beta debe ser mayor que 0")
+
+    alpha_n = float(alpha) / total
+    beta_n = float(beta) / total
+
+    r1 = 1 - sigmoid_pen_docking(float(d1))
+    r2 = 1 - sigmoid_pen_docking(float(d2))
+
+    docking_reward = (r1 ** alpha_n) * (r2 ** beta_n)
+    logp_reward = np.exp(-((float(logp) - float(mu)) ** 2) / (2.0 * float(sigma) ** 2))
+
+    reward = np.clip(docking_reward * logp_reward, float(eps_floor), 1.0)
+    return float(reward)
 
 
 COMBINERS: Dict[str, Callable] = {
     "docking_only": combine_docking_only,
-    "docking_multi": combine_docking_multi,
     "docking_logp": combine_docking_logP,
-    "mw_only": sigmoid_pen_weight,
-    "weighted_sum": combine_weighted_sum,
+    "docking_two": combine_two_docking,
+    "docking_two_logp": combine_two_docking_logP,
 }

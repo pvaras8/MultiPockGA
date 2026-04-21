@@ -109,23 +109,6 @@ class RewardRunner:
                 raise ValueError(f"Falta columna '{docking_col}'")
             df["Fitness"] = df[docking_col].apply(self.combiner)
 
-        elif self.combiner_name == "docking_multi":
-            docking_columns = self.reward_cfg.get("docking_columns")
-            if docking_columns is None:
-                docking_columns = [c for c in df.columns if c.lower().startswith("docking")]
-            if len(docking_columns) == 0:
-                raise ValueError("No se encontraron columnas de docking para 'docking_multi'")
-
-            missing_cols = [c for c in docking_columns if c not in df.columns]
-            if missing_cols:
-                raise ValueError(f"Columnas docking faltantes: {missing_cols}")
-
-            aggregation = self.reward_cfg.get("docking_aggregation", "mean")
-            df["Fitness"] = df[docking_columns].apply(
-                lambda row: self.combiner(row.to_numpy(dtype=float), aggregation=aggregation),
-                axis=1,
-            )
-
         elif self.combiner_name == "docking_logp":
             docking_col = self.reward_cfg.get("docking_column", "Docking")
             logp_col = self.reward_cfg.get("logp_column", "LogP")
@@ -136,32 +119,56 @@ class RewardRunner:
                 axis=1,
             )
 
-        elif self.combiner_name == "mw_only":
-            mw_col = self.reward_cfg.get("mw_column", "MW")
-            if mw_col not in df.columns:
-                raise ValueError(f"Falta columna '{mw_col}'")
-            df["Fitness"] = df[mw_col].apply(self.combiner)
+        elif self.combiner_name == "docking_two":
+            docking_columns = self.reward_cfg.get("docking_columns")
+            if docking_columns is None or len(docking_columns) != 2:
+                raise ValueError(
+                    "'docking_two' requiere reward.docking_columns con exactamente 2 columnas"
+                )
 
-        elif self.combiner_name == "weighted_sum":
-            weighted_cfg = self.reward_cfg.get("weighted_sum")
-            if weighted_cfg is None:
-                raise ValueError("Falta reward.weighted_sum para combiner 'weighted_sum'")
-
-            if "columns" in weighted_cfg and "weights" in weighted_cfg:
-                columns = weighted_cfg["columns"]
-                weights = weighted_cfg["weights"]
-                bias = weighted_cfg.get("bias", 0.0)
-            else:
-                bias = weighted_cfg.get("bias", 0.0)
-                columns = [c for c in weighted_cfg.keys() if c != "bias"]
-                weights = [weighted_cfg[c] for c in columns]
-
-            missing_cols = [c for c in columns if c not in df.columns]
+            missing_cols = [c for c in docking_columns if c not in df.columns]
             if missing_cols:
-                raise ValueError(f"Columnas faltantes para weighted_sum: {missing_cols}")
+                raise ValueError(f"Columnas docking faltantes: {missing_cols}")
 
-            df["Fitness"] = df[columns].apply(
-                lambda row: self.combiner(row.to_numpy(dtype=float), weights, bias=bias),
+            alpha = float(self.reward_cfg.get("docking_alpha", 0.5))
+            beta = float(self.reward_cfg.get("docking_beta", 0.5))
+            d1_col, d2_col = docking_columns
+            df["Fitness"] = df.apply(
+                lambda row: self.combiner(row[d1_col], row[d2_col], alpha=alpha, beta=beta),
+                axis=1,
+            )
+
+        elif self.combiner_name == "docking_two_logp":
+            docking_columns = self.reward_cfg.get("docking_columns")
+            if docking_columns is None or len(docking_columns) != 2:
+                raise ValueError(
+                    "'docking_two_logp' requiere reward.docking_columns con exactamente 2 columnas"
+                )
+
+            missing_cols = [c for c in docking_columns if c not in df.columns]
+            if missing_cols:
+                raise ValueError(f"Columnas docking faltantes: {missing_cols}")
+
+            logp_col = self.reward_cfg.get("logp_column", "LogP")
+            if logp_col not in df.columns:
+                raise ValueError(f"Falta columna '{logp_col}'")
+
+            alpha = float(self.reward_cfg.get("docking_alpha", 0.5))
+            beta = float(self.reward_cfg.get("docking_beta", 0.5))
+            mu = float(self.reward_cfg.get("logp_mu", 2.5))
+            sigma = float(self.reward_cfg.get("logp_sigma", 1.0))
+            d1_col, d2_col = docking_columns
+
+            df["Fitness"] = df.apply(
+                lambda row: self.combiner(
+                    row[d1_col],
+                    row[d2_col],
+                    row[logp_col],
+                    alpha=alpha,
+                    beta=beta,
+                    mu=mu,
+                    sigma=sigma,
+                ),
                 axis=1,
             )
 

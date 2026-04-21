@@ -27,24 +27,17 @@ reward:
 
   # Opciones de combiner soportadas:
   # - docking_only
-  # - docking_multi
   # - docking_logp
-  # - mw_only
-  # - weighted_sum
-  combiner: "docking_multi"
+  # - docking_two
+  # - docking_two_logp
+  combiner: "docking_two_logp"
 
   # Columnas parametrizables para combiners.
   docking_column: "Docking_6EIF"
   logp_column: "LogP"
-  mw_column: "MW"
   docking_columns: ["Docking_6EIF", "Docking_7Q1P"]
-  docking_aggregation: "mean"
-
-  # weighted_sum puede ser por lista (columns/weights) o por mapeo directo.
-  # weighted_sum:
-  #   columns: ["Docking_6EIF", "Docking_7Q1P", "MW", "LogP"]
-  #   weights: [-0.5, -0.5, -0.001, -0.1]
-  #   bias: 0.0
+  docking_alpha: 0.5
+  docking_beta: 0.5
 
   providers:
     - name: "dock_6eif"

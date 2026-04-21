@@ -21,10 +21,11 @@ reward:
   results_output_dir: "experiments/ga_run_meeko/rewards"
   results_output_prefix: "reward_results"
   fail_on_error: true
-  combiner: "docking_multi"
+  combiner: "docking_two"
   docking_column: "Docking_6EIF"
   docking_columns: ["Docking_6EIF", "Docking_7Q1P"]
-  docking_aggregation: "mean"
+  docking_alpha: 0.5
+  docking_beta: 0.5
 
   providers:
     - name: "dock_6eif"
