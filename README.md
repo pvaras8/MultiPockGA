@@ -39,6 +39,9 @@ El GA usa siempre operadores de AutoGrow para crossover y mutation.
 - Para docking con Vina/MGLTools usa [config/docking.yaml](config/docking.yaml).
 - Para docking con Meeko+Vina usa [config/docking_meeko.yaml](config/docking_meeko.yaml).
 
+Ambas configuraciones generan intermedios por receptor en `experiments/.../tmp/<receptor>/docking_results_<epoch>_temp.csv`
+y un archivo combinado por epoch en `experiments/.../rewards/reward_results_<epoch>.csv`.
+
 Ejecucion:
 
 ```bash

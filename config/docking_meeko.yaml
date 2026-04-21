@@ -21,15 +21,26 @@ reward:
   results_output_dir: "experiments/ga_run_meeko/rewards"
   results_output_prefix: "reward_results"
   fail_on_error: true
-  combiner: "docking_only"
-  docking_column: "Docking"
+  combiner: "docking_multi"
+  docking_column: "Docking_6EIF"
+  docking_columns: ["Docking_6EIF", "Docking_7Q1P"]
+  docking_aggregation: "mean"
 
   providers:
-    - name: "dock_meeko_6eif"
+    - name: "dock_6eif"
       type: "docking"
       script: "scripts/reward_meeko_vina.py"
-      vars_file: "config/vars_meeko.json"
+      vars_file: "config/vars_meeko_6eif.json"
       smiles_output_file: "experiments/ga_run_meeko/tmp/smiles_6eif.smi"
       output_dir: "experiments/ga_run_meeko/tmp/6eif"
       output_prefix: "docking_results"
-      output_column: "Docking"
+      output_column: "Docking_6EIF"
+
+    - name: "dock_7q1p"
+      type: "docking"
+      script: "scripts/reward_meeko_vina.py"
+      vars_file: "config/vars_meeko_7q1p.json"
+      smiles_output_file: "experiments/ga_run_meeko/tmp/smiles_7q1p.smi"
+      output_dir: "experiments/ga_run_meeko/tmp/7q1p"
+      output_prefix: "docking_results"
+      output_column: "Docking_7Q1P"
