@@ -31,3 +31,17 @@ pip install -e .
 ```bash
 pytest -q
 ```
+
+## Seleccion De Docking
+
+El GA usa siempre operadores de AutoGrow para crossover y mutation.
+
+- Para docking con Vina/MGLTools usa [config/docking.yaml](config/docking.yaml).
+- Para docking con Meeko+Vina usa [config/docking_meeko.yaml](config/docking_meeko.yaml).
+
+Ejecucion:
+
+```bash
+python scripts/run_ga.py -c config/docking.yaml
+python scripts/run_ga.py -c config/docking_meeko.yaml
+```

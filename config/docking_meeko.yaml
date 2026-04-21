@@ -2,14 +2,12 @@ ga:
   source_compound_file: "datasets/epoch_64_results.csv"
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run_meeko"
-  operator_backend: "brics_selfies"
+  operator_backend: "autogrow"
   num_generations: 10
   top_k: 4
   crossover_budget: 2
   mutation_budget: 2
-  crossover_products_per_pair: 4
   mutation_children_limit: 1
-  selfies_mutation_tries: 30
   maximize_fitness: true
   random_seed: 7
 
