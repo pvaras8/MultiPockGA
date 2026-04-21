@@ -1,5 +1,5 @@
 {
-  "filename_of_receptor": "/LUSTRE/users/pvaras/PockLigGPT/docking_vina/pdb/6eif_processed.pdb",
+  "filename_of_receptor": "/LUSTRE/users/pvaras/PockLigGPT/docking_vina/pdb/6eif_processed.pdbqt",
   "center_x": 7.8,
   "center_y": 17.01,
   "center_z": -47.09,

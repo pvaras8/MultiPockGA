@@ -30,6 +30,8 @@ class RewardRunner:
         self.output_prefix = self.reward_cfg.get("results_output_prefix", "reward_results")
         self.output_dir = self.reward_cfg.get("results_output_dir", ".")
         self.fail_on_error = bool(self.reward_cfg.get("fail_on_error", True))
+        self.last_epoch_results: Optional[pd.DataFrame] = None
+        self.last_epoch: Optional[int] = None
 
         providers_cfg = self.reward_cfg.get("providers", [])
         if not providers_cfg:
@@ -197,6 +199,8 @@ class RewardRunner:
             df_temp = self._merge_provider_outputs(provider_outputs)
             df_temp = self._apply_combiner(df_temp)
             self._save_epoch_results(df_temp, epoch)
+            self.last_epoch_results = df_temp.copy()
+            self.last_epoch = int(epoch)
 
             valid_rewards = (
                 df_temp.sort_values("input_idx")["Fitness"]
@@ -218,6 +222,8 @@ class RewardRunner:
 
         except Exception as e:
             print(f"Error durante reward_fn: {e}")
+            self.last_epoch_results = None
+            self.last_epoch = None
             if self.fail_on_error:
                 raise
             return [0.0] * len(molecules)
