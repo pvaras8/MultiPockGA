@@ -162,13 +162,20 @@ def docking(smiles_folder, smiles_file, vars):
     print(sdfs_folder_path)
     pdb_dir = smiles_folder + '_PDB/'
     print(pdb_dir)
-    smiles_to_sdfs(vars, gen_smiles_file=os.path.join(smiles_folder, smiles_file), smile_file_directory=smiles_folder)
-    conversion_to_3d.convert_sdf_to_pdbs(vars, gen_folder_path=smiles_folder, sdfs_folder_path=sdfs_folder_path)
-    docking_object = pdb_to_pdbqt(vars, pdb_dir=pdb_dir)
-    smiles_list = docking_pdbqt(vars, docking_object, pdb_dir, os.path.join(smiles_folder, smiles_file))
-    # **Eliminar completamente el directorio `pdb_dir`**
-    shutil.rmtree(pdb_dir, ignore_errors=True)
-    return smiles_list
+    gypsum_submission_dir = "{}gypsum_submission_files{}".format(smiles_folder, os.sep)
+
+    try:
+        smiles_to_sdfs(vars, gen_smiles_file=os.path.join(smiles_folder, smiles_file), smile_file_directory=smiles_folder)
+        conversion_to_3d.convert_sdf_to_pdbs(vars, gen_folder_path=smiles_folder, sdfs_folder_path=sdfs_folder_path)
+        docking_object = pdb_to_pdbqt(vars, pdb_dir=pdb_dir)
+        smiles_list = docking_pdbqt(vars, docking_object, pdb_dir, os.path.join(smiles_folder, smiles_file))
+        return smiles_list
+    finally:
+        # Limpiar carpetas temporales de la generacion
+        shutil.rmtree(pdb_dir, ignore_errors=True)
+        shutil.rmtree(sdfs_folder_path, ignore_errors=True)
+        shutil.rmtree(gypsum_submission_dir, ignore_errors=True)
+        shutil.rmtree(smiles_folder, ignore_errors=True)
 
 # Actualiza el archivo fuente (SMILES)
 source_compound_file = sys.argv[1]
