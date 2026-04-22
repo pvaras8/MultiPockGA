@@ -1,5 +1,5 @@
 ga:
-  source_compound_file: "datasets/epoch_64_results.csv"
+  source_compound_file: "datasets/final_seed_lipinski_top_fitness"
   # Si source_compound_file termina en .csv, se usa esta columna.
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run"
@@ -30,7 +30,8 @@ reward:
   # - docking_logp
   # - docking_two
   # - docking_two_logp
-  combiner: "docking_two_logp"
+  # - docking_two_qed
+  combiner: "docking_two_qed"
 
   # Columnas parametrizables para combiners.
   docking_column: "Docking_6EIF"
