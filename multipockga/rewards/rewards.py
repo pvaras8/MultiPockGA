@@ -172,6 +172,36 @@ class RewardRunner:
                 axis=1,
             )
 
+        elif self.combiner_name == "docking_two_qed":
+            docking_columns = self.reward_cfg.get("docking_columns")
+            if docking_columns is None or len(docking_columns) != 2:
+                raise ValueError(
+                    "'docking_two_qed' requiere reward.docking_columns con exactamente 2 columnas"
+                )
+
+            missing_cols = [c for c in docking_columns if c not in df.columns]
+            if missing_cols:
+                raise ValueError(f"Columnas docking faltantes: {missing_cols}")
+
+            qed_col = self.reward_cfg.get("qed_column", "QED")
+            if qed_col not in df.columns:
+                raise ValueError(f"Falta columna '{qed_col}'")
+
+            alpha = float(self.reward_cfg.get("docking_alpha", 0.5))
+            beta = float(self.reward_cfg.get("docking_beta", 0.5))
+            d1_col, d2_col = docking_columns
+
+            df["Fitness"] = df.apply(
+                lambda row: self.combiner(
+                    row[d1_col],
+                    row[d2_col],
+                    row[qed_col],
+                    alpha=alpha,
+                    beta=beta,
+                ),
+                axis=1,
+            )
+
         else:
             raise NotImplementedError(f"Combiner '{self.combiner_name}' no implementado")
 
