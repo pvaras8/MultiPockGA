@@ -1,12 +1,12 @@
 ga:
-  source_compound_file: "datasets/final_seed_lipinski_top_fitness.csv"
+  source_compound_file: "datasets/de_novo_test_set.csv"
   # Si source_compound_file termina en .csv, se usa esta columna.
   source_smiles_column: "SMILES"
   output_dir: "experiments/ga_run"
   # Crossover/Mutation siempre se ejecutan con AutoGrow.
   operator_backend: "autogrow"
   num_generations: 30
-  top_k: 100
+  top_k: 200
   crossover_budget: 20
   mutation_budget: 20
   crossover_attempts: 3
@@ -37,7 +37,7 @@ reward:
   docking_column: "Docking_6EIF"
   logp_column: "LogP"
   qed_column: "QED"
-  docking_columns: ["Docking_6EIF", "Docking_7Q1P"]
+  docking_columns: ["Docking_6EIF", "Docking_5TOL"]
   docking_alpha: 0.5
   docking_beta: 0.5
 
@@ -51,14 +51,23 @@ reward:
       output_prefix: "docking_results"
       output_column: "Docking_6EIF"
 
-    - name: "dock_7q1p"
+    - name: "dock_5tol"
       type: "docking"
       script: "scripts/reward_mgltools_vina.py"
-      vars_file: "config/vars_mgltools_7q1p.json"
-      smiles_output_file: "experiments/ga_run/tmp/smiles_7q1p.smi"
-      output_dir: "experiments/ga_run/tmp/7q1p"
+      vars_file: "config/vars_mgltools_5tol.json"
+      smiles_output_file: "experiments/ga_run/tmp/smiles_5tol.smi"
+      output_dir: "experiments/ga_run/tmp/5tol"
       output_prefix: "docking_results"
-      output_column: "Docking_7Q1P"
+      output_column: "Docking_5TOL"
+
+    # - name: "dock_7q1p"
+    #   type: "docking"
+    #   script: "scripts/reward_mgltools_vina.py"
+    #   vars_file: "config/vars_mgltools_7q1p.json"
+    #   smiles_output_file: "experiments/ga_run/tmp/smiles_7q1p.smi"
+    #   output_dir: "experiments/ga_run/tmp/7q1p"
+    #   output_prefix: "docking_results"
+    #   output_column: "Docking_7Q1P"
 
     # Provider de propiedades fisicoquimicas (LogP y MW)
     - name: "rdkit_props"
